@@ -1,3 +1,9 @@
+# Progetto
+kaggle.json
+airbus-ship-detection.zip
+datasets/airbus-ship-detection/test_v2/
+datasets/airbus-ship-detection/train_v2/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
