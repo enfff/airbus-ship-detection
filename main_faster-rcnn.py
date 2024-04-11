@@ -124,18 +124,20 @@ train_data = ShipsDataset(train_list, transforms = img_train_transforms, folder_
 # test_data = ShipsDataset(train_list, transforms = img_train_transforms)
 val_data = ShipsDataset(val_list, transforms = img_validation_transforms, folder_name="train_v2") 
 
-train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size = batch_size,shuffle = True)
-val_loader = torch.utils.data.DataLoader(dataset = val_data, batch_size = batch_size,shuffle = True)
+train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size = batch_size, shuffle = True)
+val_loader = torch.utils.data.DataLoader(dataset = val_data, batch_size = batch_size, shuffle = True)
 
 print(len(train_data),len(train_loader))
 print(len(val_data), len(val_loader))
 
 model_resnet50 = torchvision.models.detection.fasterrcnn_resnet50_fpn() # usa weights di default
+# https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html#torchvision.models.detection.fasterrcnn_resnet50_fpn
+# La documentazione non è chiara sulla posizione dei punti per le ground-truth!
 
 for name, param in model_resnet50.named_parameters():
       param.requires_grad = False
 
-num_classes = 1
+num_classes = 2 # ship, non-ship
 
 # model_resnet18.fc = nn.Sequential(nn.Linear(model_resnet18.fc.in_features,128),
 #                                   nn.Linear(128, num_classes))
