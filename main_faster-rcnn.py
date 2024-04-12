@@ -35,6 +35,9 @@ img_dimensions = 224
 # Normalize to the ImageNet mean and standard deviation
 # Could calculate it for the cats/dogs data set, but the ImageNet
 # values give acceptable results here.
+
+# TODO RICONTROLLA to revise
+
 img_train_transforms = transforms.Compose([
     transforms.RandomRotation(50),
     transforms.RandomAffine(degrees = 0, translate = (0.2, 0.2)),
@@ -49,6 +52,18 @@ img_validation_transforms = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225] )
     ])
+
+def img_label_transform(target):
+    # TODO # sbrighiamocela dopo non si sa per ora, in caso leggi documentazione
+    # target - dictionary containing
+                # {
+                #     "boxes": [[x1, y1, x2, y2], [x1, y1, x2, y2], ...]
+                #     "labels": [0, 0, ...]
+                # }
+    # return transformations on the boxes
+
+    Warning('TODO')
+    return None
 
 # model_resnet18 = torch.hub.load('pytorch/vision', 'resnet18', weights=True) 
 
@@ -85,9 +100,9 @@ def show(imgs, rotation=None):
         axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
 class ShipsDataset(torch.utils.data.Dataset):
-    def __init__(self, file_list, transforms, folder_name ):
+    def __init__(self, file_list, targets, transforms = None):
         self.file_list = file_list
-        self.folder_name = folder_name
+        self.targets = targets
         self.transforms = transforms
         # load all image files, sorting them to
         # ensure that they are aligned
@@ -95,21 +110,19 @@ class ShipsDataset(torch.utils.data.Dataset):
         # self.masks = list(sorted(os.listdir(os.path.join(self.root))))
 
     def __len__(self):
-        return len(self.file_list)
+        self.filelength = len(self.file_list) 
+        return self.filelength
 
-    def __getitem__(self, image_id):
-        image = read_image(os.path.join("datasets", "airbus-ship-detection"))
-        
-        if os.path.exists(os.path.join("datasets", "airbus-ship-detection", "labels", image_id, ".txt")):
-            label = 0
-        else:
-            label = None
+    def __getitem__(self, idx):
+        image = self.file_list[idx]     # numpy tensor
+        label = self.targets[idx]       # dictionary {"boxes": , "label": }
 
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
-        return image, label
+
+        return image, self.targets[idx]
 
 from sklearn.model_selection import train_test_split
 
@@ -118,17 +131,22 @@ TRAIN_DIR = os.path.join("datasets", "airbus-ship-detection", "train_v2")
 TEST_DIR = os.path.join("datasets", "airbus-ship-detection", "test_v2")
 
 train_list = glob.glob(os.path.join(TRAIN_DIR,'*.jpg'))
-train_list, val_list = train_test_split(train_list , test_size =0.2)
+train_list, val_list = train_test_split(train_list , test_size = 0.2)
 
-train_data = ShipsDataset(train_list, transforms = img_train_transforms, folder_name="train_v2")
+train_data = ShipsDataset(train_list, transforms = img_train_transforms, targets=np.load('rcnn_targets.npy', allow_pickle='TRUE'))
 # test_data = ShipsDataset(train_list, transforms = img_train_transforms)
-val_data = ShipsDataset(val_list, transforms = img_validation_transforms, folder_name="train_v2") 
+val_data = ShipsDataset(val_list, transforms = img_validation_transforms, ) 
 
+# TODO gestire shuffle
+# Sostanzialmente targets deve essere splittato correttamente
+# Magari togli opzione shuffle
 train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size = batch_size, shuffle = True)
 val_loader = torch.utils.data.DataLoader(dataset = val_data, batch_size = batch_size, shuffle = True)
 
 print(len(train_data),len(train_loader))
 print(len(val_data), len(val_loader))
+
+print('arrivatooooo')
 
 model_resnet50 = torchvision.models.detection.fasterrcnn_resnet50_fpn() # usa weights di default
 # https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html#torchvision.models.detection.fasterrcnn_resnet50_fpn
