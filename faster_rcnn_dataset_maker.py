@@ -79,7 +79,7 @@ for index, row in targets.iterrows():
         assert(h <= 1 and h>= 0)
 
         tmp_dict["boxes"] += [[x1, y1, x2, y2]]
-        tmp_dict["labels"] += [0]                   # only one class: ship
+        tmp_dict["labels"] += [[1]]                   # only one class: ship
 
         # During training, the model expects both the input tensors and a targets (list of dictionary), containing:
         # boxes (FloatTensor[N, 4]): the ground-truth boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
