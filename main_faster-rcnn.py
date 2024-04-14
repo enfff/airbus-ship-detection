@@ -27,7 +27,9 @@ from torchvision.transforms.functional import rotate
 from torchvision.utils import draw_segmentation_masks
 from torchvision.ops import masks_to_boxes
 import numpy as np
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
+device= 'cpu'
 
 batch_size=32
 img_dimensions = 224
@@ -53,7 +55,7 @@ img_validation_transforms = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225] )
     ])
 
-def img_label_transform(target):
+""" def img_label_transform(target):
     # TODO # sbrighiamocela dopo non si sa per ora, in caso leggi documentazione
     # target - dictionary containing
                 # {
@@ -63,9 +65,7 @@ def img_label_transform(target):
     # return transformations on the boxes
 
     Warning('TODO')
-    return None
-
-# model_resnet18 = torch.hub.load('pytorch/vision', 'resnet18', weights=True) 
+    return None """
 
 import torch
 import matplotlib.pyplot as plt
@@ -100,10 +100,11 @@ def show(imgs, rotation=None):
         axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
 class ShipsDataset(torch.utils.data.Dataset):
-    def __init__(self, file_list, targets, transforms = None):
+    def __init__(self, file_list, targets, transforms = None, target_transforms = None):
         self.file_list = file_list
         self.targets = targets
-        self.transforms = transforms
+        self.transform = transforms
+        # self.target_transforms = target_transforms
         # load all image files, sorting them to
         # ensure that they are aligned
         # self.imgs = list(sorted(os.listdir(os.path.join(self.root, folder_name))))
@@ -119,10 +120,9 @@ class ShipsDataset(torch.utils.data.Dataset):
 
         if self.transform:
             image = self.transform(image)
-        if self.target_transform:
-            label = self.target_transform(label)
+            label = self.transform(label)
 
-        return image, self.targets[idx]
+        return image, label
 
 from sklearn.model_selection import train_test_split
 
@@ -135,11 +135,8 @@ train_list, val_list = train_test_split(train_list , test_size = 0.2)
 
 train_data = ShipsDataset(train_list, transforms = img_train_transforms, targets=np.load('rcnn_targets.npy', allow_pickle='TRUE'))
 # test_data = ShipsDataset(train_list, transforms = img_train_transforms)
-val_data = ShipsDataset(val_list, transforms = img_validation_transforms, ) 
+val_data = ShipsDataset(val_list, transforms = img_validation_transforms,targets=np.load('rcnn_targets.npy', allow_pickle='TRUE') ) 
 
-# TODO gestire shuffle
-# Sostanzialmente targets deve essere splittato correttamente
-# Magari togli opzione shuffle
 train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size = batch_size, shuffle = True)
 val_loader = torch.utils.data.DataLoader(dataset = val_data, batch_size = batch_size, shuffle = True)
 
@@ -148,19 +145,37 @@ print(len(val_data), len(val_loader))
 
 print('arrivatooooo')
 
-model_resnet50 = torchvision.models.detection.fasterrcnn_resnet50_fpn() # usa weights di default
+temp=np.load('rcnn_targets.npy', allow_pickle='TRUE')
+print(temp[0])
+
+
+model_rcnn = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='DEFAULT') # usa weights di default
 # https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html#torchvision.models.detection.fasterrcnn_resnet50_fpn
 # La documentazione non è chiara sulla posizione dei punti per le ground-truth!
 
-for name, param in model_resnet50.named_parameters():
+## STEP 1. freeze backbone layers, add final layers and train the network
+
+for name, param in model_rcnn.named_parameters():
       param.requires_grad = False
 
-num_classes = 2 # ship, non-ship
+num_classes = 2 # background, ship
 
-# model_resnet18.fc = nn.Sequential(nn.Linear(model_resnet18.fc.in_features,128),
-#                                   nn.Linear(128, num_classes))
+in_features = model_rcnn.roi_heads.box_predictor.cls_score.in_features
+model_rcnn.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 
-def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device="gpu"):
+# what last layer of model_rcnn is like
+""" (roi_heads): RoIHeads(
+    (box_roi_pool): MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3'], output_size=(7, 7), sampling_ratio=2)
+    (box_head): TwoMLPHead(
+      (fc6): Linear(in_features=12544, out_features=1024, bias=True)
+      (fc7): Linear(in_features=1024, out_features=1024, bias=True)
+    )
+    (box_predictor): FastRCNNPredictor(
+      (cls_score): Linear(in_features=1024, out_features=91, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=364, bias=True)
+    ) """
+
+def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device= device):
     for epoch in range(epochs):
         training_loss = 0.0
         valid_loss = 0.0
@@ -196,12 +211,12 @@ def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device=
         print('Epoch: {}, Training Loss: {:.4f}, Validation Loss: {:.4f}, accuracy = {:.4f}'.format(epoch, training_loss,
         valid_loss, num_correct / num_examples))
 
-if torch.cuda.is_available():
+""" if torch.cuda.is_available():
     device = torch.device("cuda")
 else:
     device = torch.device("cpu")
-
-model = model_resnet50.to(device)
+ """
+model = model_rcnn.to(device)
 torch.compile(model)
 optimizer = optim.Adam(params = model.parameters(),lr =0.01)
 criterion = nn.CrossEntropyLoss()
