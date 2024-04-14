@@ -17,6 +17,7 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.models as models
 from torchvision import transforms
+from torchvision.transforms import v2
 from PIL import Image
 import matplotlib.pyplot as plt
 import glob
@@ -41,17 +42,17 @@ img_dimensions = 224
 # TODO RICONTROLLA to revise
 
 img_train_transforms = transforms.Compose([
-    transforms.RandomRotation(50),
-    transforms.RandomAffine(degrees = 0, translate = (0.2, 0.2)),
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.Resize((img_dimensions, img_dimensions)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225] )
+    v2.RandomRotation(50),
+    v2.RandomAffine(degrees = 0, translate = (0.2, 0.2)),
+    v2.RandomHorizontalFlip(p=0.5),
+    v2.Resize((img_dimensions, img_dimensions), antialias=True),
+    v2.ToDtype(torch.float32, scale=True),
+    v2.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225] )
     ])
 
 img_validation_transforms = transforms.Compose([
-    transforms.Resize((img_dimensions,img_dimensions)),
-    transforms.ToTensor(),
+    transforms.Resize((img_dimensions,img_dimensions), antialias=True),
+    v2.ToDtype(torch.float32, scale=True),
     transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225] )
     ])
 
@@ -70,20 +71,6 @@ img_validation_transforms = transforms.Compose([
 import torch
 import matplotlib.pyplot as plt
 import torchvision.transforms.functional as F
-
-def rl_decode(rl_str, height, length):
-  mask = np.zeros(shape=(1,height,length))
-  couples = rl_str.split()
-  for i in range(0, len(couples)-1, 2):
-    # print(i)
-    el = int(couples[i])
-    qty = int(couples[i+1])
-    r,c = np.unravel_index(el,(height,length))
-    for j in range(qty):
-      mask[0, c+j-1, r-1] = 1
-
-    # print(torch.Tensor(mask))
-  return torch.Tensor(mask).reshape((768, 768)).gt(0)
 
 def show(imgs, rotation=None):
 
@@ -104,23 +91,17 @@ class ShipsDataset(torch.utils.data.Dataset):
         self.file_list = file_list
         self.targets = targets
         self.transform = transforms
-        # self.target_transforms = target_transforms
-        # load all image files, sorting them to
-        # ensure that they are aligned
-        # self.imgs = list(sorted(os.listdir(os.path.join(self.root, folder_name))))
-        # self.masks = list(sorted(os.listdir(os.path.join(self.root))))
 
     def __len__(self):
         self.filelength = len(self.file_list) 
         return self.filelength
 
     def __getitem__(self, idx):
-        image = self.file_list[idx]     # numpy tensor
+        image = read_image(self.file_list[idx])    # numpy tensor
         label = self.targets[idx]       # dictionary {"boxes": , "label": }
 
         if self.transform:
-            image = self.transform(image)
-            label = self.transform(label)
+            image, label = self.transform((image, label))
 
         return image, label
 
@@ -137,19 +118,14 @@ train_data = ShipsDataset(train_list, transforms = img_train_transforms, targets
 # test_data = ShipsDataset(train_list, transforms = img_train_transforms)
 val_data = ShipsDataset(val_list, transforms = img_validation_transforms,targets=np.load('rcnn_targets.npy', allow_pickle='TRUE') ) 
 
-train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size = batch_size, shuffle = True)
-val_loader = torch.utils.data.DataLoader(dataset = val_data, batch_size = batch_size, shuffle = True)
+train_loader = torch.utils.data.DataLoader(dataset = train_data, batch_size = batch_size, shuffle = True, collate_fn=lambda x: x)
+val_loader = torch.utils.data.DataLoader(dataset = val_data, batch_size = batch_size, shuffle = True, collate_fn=lambda x: x)
 
 print(len(train_data),len(train_loader))
 print(len(val_data), len(val_loader))
 
-print('arrivatooooo')
 
-temp=np.load('rcnn_targets.npy', allow_pickle='TRUE')
-print(temp[0])
-
-
-model_rcnn = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='DEFAULT') # usa weights di default
+model_rcnn = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='DEFAULT') 
 # https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html#torchvision.models.detection.fasterrcnn_resnet50_fpn
 # La documentazione non è chiara sulla posizione dei punti per le ground-truth!
 
@@ -182,6 +158,7 @@ def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device=
         model.train()
         for batch in train_loader:
             optimizer.zero_grad()
+            #print(batch)
             inputs, targets = batch
             inputs = inputs.to(device)
             targets = targets.to(device)
