@@ -29,6 +29,7 @@ from torchvision.utils import draw_segmentation_masks
 from torchvision.ops import masks_to_boxes
 import numpy as np
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from torchvision import tv_tensors
 
 device= 'cpu'
 
@@ -99,12 +100,13 @@ class ShipsDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         image = read_image(self.file_list[idx])    # numpy tensor
         label = self.targets[idx]       # dictionary {"boxes": , "label": }
-
+        label['boxes'] = torch.Tensor(label['boxes'])
+        label['labels'] = torch.Tensor(label['labels']).to(dtype=torch.int64).reshape((-1,))
+        
         if self.transform:
-            image, label = self.transform((image, label))
-
+            image,label = self.transform((image,label))
+        
         return image, label
-
 from sklearn.model_selection import train_test_split
 
 DATASET_DIR = os.path.join("datasets", "airbus-ship-detection")
@@ -128,6 +130,7 @@ print(len(val_data), len(val_loader))
 model_rcnn = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='DEFAULT') 
 # https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html#torchvision.models.detection.fasterrcnn_resnet50_fpn
 # La documentazione non è chiara sulla posizione dei punti per le ground-truth!
+# /Users/ludovicamazzucco/Library/Python/3.9/lib/python/site-packages/torchvision/models/detection/generalized_rcnn.py"
 
 ## STEP 1. freeze backbone layers, add final layers and train the network
 
@@ -158,11 +161,27 @@ def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device=
         model.train()
         for batch in train_loader:
             optimizer.zero_grad()
-            #print(batch)
-            inputs, targets = batch
-            inputs = inputs.to(device)
-            targets = targets.to(device)
-            output = model(inputs)
+            #inputs, targets = batch
+            """ inputs = [img for i,el in enumerate(batch)]     
+            targets = [lab for img,lab in batch] """
+
+            inputs = []
+            targets = []
+            for el in batch:       # el = (image,labels)
+                if el[1]['boxes'].size()[0] != 0:
+                    inputs.append(el[0])
+                    targets.append(el[1])
+            
+           # inputs = inputs.to(device)
+           # targets = targets.to(device)
+            output = model(inputs,targets)  # NOTE: output is a dict with already computed losses within!
+            print(output)
+
+            """ EXAMPLE :
+            {'loss_classifier': tensor(1.0206, grad_fn=<NllLossBackward0>), 
+             'loss_box_reg': tensor(0.0071, grad_fn=<DivBackward0>), 
+             'loss_objectness': tensor(1.8541), 'loss_rpn_box_reg': tensor(1.8591)} """
+            
             loss = loss_fn(output, targets)
             loss.backward()
             optimizer.step()
@@ -173,10 +192,11 @@ def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device=
         num_correct = 0
         num_examples = 0
         for batch in val_loader:
-            inputs, targets = batch
-            inputs = inputs.to(device)
+            inputs = [img for img,lab in batch]
+            targets = [lab for img,lab in batch]
+           # inputs = inputs.to(device)
             output = model(inputs)
-            targets = targets.to(device)
+           # targets = targets.to(device)
             loss = loss_fn(output,targets)
             valid_loss += loss.data.item() * inputs.size(0)
 
