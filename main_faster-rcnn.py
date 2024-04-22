@@ -159,12 +159,14 @@ def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device=
         training_loss = 0.0
         valid_loss = 0.0
         model.train()
-        for batch in train_loader:
+        for i,batch in enumerate(train_loader):
+            print("BATCH: ", i)
             optimizer.zero_grad()
             #inputs, targets = batch
             """ inputs = [img for i,el in enumerate(batch)]     
             targets = [lab for img,lab in batch] """
 
+            # filtering out empty images (model does not accept empty targets)
             inputs = []
             targets = []
             for el in batch:       # el = (image,labels)
@@ -175,17 +177,17 @@ def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device=
            # inputs = inputs.to(device)
            # targets = targets.to(device)
             output = model(inputs,targets)  # NOTE: output is a dict with already computed losses within!
-            print(output)
 
             """ EXAMPLE :
             {'loss_classifier': tensor(1.0206, grad_fn=<NllLossBackward0>), 
              'loss_box_reg': tensor(0.0071, grad_fn=<DivBackward0>), 
              'loss_objectness': tensor(1.8541), 'loss_rpn_box_reg': tensor(1.8591)} """
             
-            loss = loss_fn(output, targets)
+            loss = sum(loss for loss in output.values())
+            #train_loss_list.append(loss.detach().cpu().numpy())
             loss.backward()
             optimizer.step()
-            training_loss += loss.data.item() * inputs.size(0)
+            training_loss += loss.data.item() * len(inputs)
         training_loss /= len(train_loader.dataset)
 
         model.eval()
@@ -197,8 +199,8 @@ def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device=
            # inputs = inputs.to(device)
             output = model(inputs)
            # targets = targets.to(device)
-            loss = loss_fn(output,targets)
-            valid_loss += loss.data.item() * inputs.size(0)
+            loss = sum(loss for loss in output.values())
+            valid_loss += loss.data.item() * len(inputs)
 
             correct = torch.eq(torch.max(F.softmax(output, dim=1), dim=1)[1], targets).view(-1)
             num_correct += torch.sum(correct).item()
