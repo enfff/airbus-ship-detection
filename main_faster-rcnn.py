@@ -179,7 +179,7 @@ def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=1, device=
         model.train()
         for i, batch in enumerate(train_loader):
             logger.info("batch " + str(i))
-            print(batch, i) # this should be unneccessary
+            print("batch", i) # this should be unneccessary
             optimizer.zero_grad()
             #inputs, targets = batch
             """ inputs = [img for i,el in enumerate(batch)]     
