@@ -1,10 +1,3 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.utils.data
-import torch.nn.functional as F
-import torchvision
-from torchvision import transforms
 from PIL import Image
 import matplotlib.pyplot as plt
 import glob
@@ -30,11 +23,31 @@ from torchvision.ops import masks_to_boxes
 import numpy as np
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision import tv_tensors
+import logging
+from datetime import datetime
 
 device= 'cpu'
-
 batch_size=32
 img_dimensions = 224
+
+create_log_file = True
+
+if create_log_file:
+    log_filename = os.getlogin() + "_" + datetime.now().strftime("%m-%d_%H.%M.%S")
+    log_filename = os.path.join("logs", log_filename + ".txt")
+    # print(log_filename)
+
+    logging.basicConfig(filename=log_filename,
+                        filemode='a',
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        level=logging.INFO,
+                        datefmt='%m-%d %H:%M:%S')
+else:
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
+                        level=logging.INFO,
+                        datefmt='%m-%d %H:%M:%S')
+
+logger = logging.getLogger(__name__)
 
 # Normalize to the ImageNet mean and standard deviation
 # Could calculate it for the cats/dogs data set, but the ImageNet
@@ -99,14 +112,20 @@ class ShipsDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         image = read_image(self.file_list[idx])    # numpy tensor
+        # try:
         label = self.targets[idx]       # dictionary {"boxes": , "label": }
         label['boxes'] = torch.Tensor(label['boxes'])
         label['labels'] = torch.Tensor(label['labels']).to(dtype=torch.int64).reshape((-1,))
-        
+        # except IndexError as e:
+        #     Warning(f'Errore con {idx = }')
+        #     plt.imshow(image.permute(1, 2, 0))
+        #     plt.show()
+            
         if self.transform:
-            image,label = self.transform((image,label))
+            image, label = self.transform((image,label))
         
         return image, label
+        
 from sklearn.model_selection import train_test_split
 
 DATASET_DIR = os.path.join("datasets", "airbus-ship-detection")
@@ -125,7 +144,6 @@ val_loader = torch.utils.data.DataLoader(dataset = val_data, batch_size = batch_
 
 print(len(train_data),len(train_loader))
 print(len(val_data), len(val_loader))
-
 
 model_rcnn = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='DEFAULT') 
 # https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html#torchvision.models.detection.fasterrcnn_resnet50_fpn
@@ -154,13 +172,14 @@ model_rcnn.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
       (bbox_pred): Linear(in_features=1024, out_features=364, bias=True)
     ) """
 
-def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=5, device= device):
+def train(model, optimizer, loss_fn, train_loader, val_loader, epochs=1, device= device):
     for epoch in range(epochs):
         training_loss = 0.0
         valid_loss = 0.0
         model.train()
-        for i,batch in enumerate(train_loader):
-            print("BATCH: ", i)
+        for i, batch in enumerate(train_loader):
+            logger.info("batch " + str(i))
+            print(batch, i) # this should be unneccessary
             optimizer.zero_grad()
             #inputs, targets = batch
             """ inputs = [img for i,el in enumerate(batch)]     
@@ -217,6 +236,7 @@ else:
  """
 model = model_rcnn.to(device)
 torch.compile(model)
-optimizer = optim.Adam(params = model.parameters(),lr =0.01)
+optimizer = optim.Adam(params = model.parameters(), lr=0.01)
 criterion = nn.CrossEntropyLoss()
-train(model, optimizer, torch.nn.CrossEntropyLoss(), train_loader, val_loader, epochs=5, device=device)
+train(model, optimizer, torch.nn.CrossEntropyLoss(), train_loader, val_loader, epochs=1 , device=device)
+torch.save(model.state_dict(), 'model_state_dict')

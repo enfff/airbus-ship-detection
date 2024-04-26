@@ -22,6 +22,8 @@ def rl_decode(rl_str, height, length):
 
 targets = pd.read_csv("train_ship_segmentations_v2.csv")
 
+skip_empty = True
+
 new_targets = []
 
 last_image_id = None
@@ -35,6 +37,10 @@ for index, row in targets.iterrows():
     image_id = row['ImageId']
     label = row['EncodedPixels']
 
+    if skip_empty:        # Skips images with empty labels
+      if pd.isna(label):
+        continue
+
     if last_image_id != image_id:
       last_image_id = image_id
 
@@ -46,7 +52,6 @@ for index, row in targets.iterrows():
         "boxes": [],
         "labels": [],
       }
-
 
     box = None
 
