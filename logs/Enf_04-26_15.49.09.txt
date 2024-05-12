@@ -1,6 +1,0 @@
-04-26 15:49:18 INFO batch 0
-04-26 15:52:54 INFO batch 1
-04-26 15:56:33 INFO batch 2
-04-26 16:00:18 INFO batch 3
-04-26 16:03:41 INFO batch 4
-04-26 16:07:30 INFO batch 5
