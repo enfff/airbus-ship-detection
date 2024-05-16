@@ -10,5 +10,5 @@ Instructions for Arch Linux
 ``` bash
 paru -Syu git-lfs
 git lfs install
-```
+`
 and you're good to go!
