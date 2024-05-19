@@ -17,6 +17,6 @@ def calculate_elapsed_time(file_path):
         
         return elapsed_time
 
-file_path = "models/model_epochs1_noaug_id0/log_05-11_20.41.30.txt"  # Replace with the path to your file
+file_path = "models/model_epochs10_noaug_id0/log_05-19_08.30.26.txt"  # Replace with the path to your file
 elapsed_time = calculate_elapsed_time(file_path)
 print("Total elapsed time: ", elapsed_time)
