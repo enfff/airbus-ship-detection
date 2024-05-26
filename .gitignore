@@ -4,6 +4,7 @@ airbus-ship-detection.zip
 datasets/airbus-ship-detection/test_v2/
 datasets/airbus-ship-detection/train_v2/
 prova*.py
+rcnn_targets.npy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
