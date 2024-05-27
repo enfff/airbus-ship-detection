@@ -1,14 +1,18 @@
 # airbus-ship-detection
- Code for the Airbus Ship Detection on Kaggle, modified for the Machine Learning for Vision and Multimedia class at Politecnico di Torino
+Code for the Airbus Ship Detection on Kaggle, modified for the Machine Learning for Vision and Multimedia class at Politecnico di Torino, with a focus on Data Augmentation Techniques
 
-- Install kaggle `pip install kaggle`, place the `kaggle.json` in the correct folder (varies depending on OS)
-- Download the dataset `kaggle competitions download -c airbus-ship-detection`
+## TODO
+- [ ] Bayesian Data Augmentation
+- [x] Fourier Based Data Augmentation
+- [x] Gaussian Patch Data Augmentation
+- [x] Random Noise Data Augmentation
+- [ ] Geometric Transformations
 
-This repository uses `git lfs` for tracking large files, read more about it [here](https://git-lfs.com/)
+#### Previously we used git lfs
+This repository used `git lfs` for tracking large files, read more about it [here](https://git-lfs.com/)
 
 Instructions for Arch Linux
 ``` bash
 paru -Syu git-lfs
 git lfs install
 ```
-and you're good to go!
