@@ -25,7 +25,7 @@ def mean_train_time(file_path):
         return (end_time - start_time) / len(lines)
 
 
-file_path = "models/log_05-27_13.54.42.txt"  # Replace with the path to your file
+file_path = "models/log.txt"  # Replace with the path to your file
 elapsed_time = calculate_elapsed_time(file_path)
 print("(TRAIN + TEST) Total elapsed time: ", elapsed_time)
 print("(TRAIN) Mean training time: ", mean_train_time(file_path))
