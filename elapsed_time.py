@@ -14,12 +14,13 @@ def calculate_elapsed_time(lines=lines):
     start_time = datetime.strptime(lines[0].split(' ')[0] + ' ' + lines[0].split(' ')[1], '%m-%d %H:%M:%S')
     end_time = datetime.strptime(lines[-1].split(' ')[0] + ' ' + lines[-1].split(' ')[1], '%m-%d %H:%M:%S')
 
-    # Calculate the elapsed time
     return end_time - start_time
 
 def mean_train_time(lines=lines):
+
     start_time = datetime.strptime(lines[0].split(' ')[0] + ' ' + lines[0].split(' ')[1], '%m-%d %H:%M:%S')
     end_time = datetime.strptime(lines[-1].split(' ')[0] + ' ' + lines[-1].split(' ')[1], '%m-%d %H:%M:%S')
+    
     return (end_time - start_time) / len(lines)
 
 print("(TRAIN) Total elapsed time: ", calculate_elapsed_time(), "(hours)")
