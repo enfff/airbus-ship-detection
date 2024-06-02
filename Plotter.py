@@ -9,18 +9,18 @@ class Plotter:
 
     def __call__(self, img):
         prediction = self.__model([img])[0]
-        boxes = prediction['boxes'].byte()
+        boxes = prediction['boxes'].int()
         scores = prediction['scores'].tolist()
         num = len(boxes)
         if num>0:
             img = draw_bounding_boxes(
-                img.byte(),
+                (img*256).byte(),
                 boxes, 
                 labels=['{:.2f}'.format(score*100) for score in scores],
-                width = 4,
+                width = 1,
                 colors = 'red',
                 font='Arial',
-                font_size = 20
+                font_size = 15
             )
         fig, ax = plt.subplots()
         fig.set_size_inches(16,9)
