@@ -1,31 +1,26 @@
 from datetime import datetime
+import re
 
-# example entry: 05-11 21:54:30 INFO E: 0 B: 231
+file_path = "models/model_noaug_id0/log.txt"  # Replace with the path to your file
 
-def calculate_elapsed_time(file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        
-        print(lines[0][:15])
+lines = []
+with open(file_path, 'r') as file:
+    lines_buf = file.readlines()
+    pattern = re.compile(r"E: \d+ B: \d+")
+    lines = [line for line in lines_buf if pattern.search(line)]
 
-        start_time = datetime.strptime(lines[0].split(' ')[0] + ' ' + lines[0].split(' ')[1], '%m-%d %H:%M:%S')
-        end_time = datetime.strptime(lines[-1].split(' ')[0] + ' ' + lines[-1].split(' ')[1], '%m-%d %H:%M:%S')
+def calculate_elapsed_time(lines=lines):
 
+    start_time = datetime.strptime(lines[0].split(' ')[0] + ' ' + lines[0].split(' ')[1], '%m-%d %H:%M:%S')
+    end_time = datetime.strptime(lines[-1].split(' ')[0] + ' ' + lines[-1].split(' ')[1], '%m-%d %H:%M:%S')
 
-        # Calculate the elapsed time
-        elapsed_time = end_time - start_time
-        
-        return elapsed_time
+    # Calculate the elapsed time
+    return end_time - start_time
 
-def mean_train_time(file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        start_time = datetime.strptime(lines[0].split(' ')[0] + ' ' + lines[0].split(' ')[1], '%m-%d %H:%M:%S')
-        end_time = datetime.strptime(lines[-1].split(' ')[0] + ' ' + lines[-1].split(' ')[1], '%m-%d %H:%M:%S')
-        return (end_time - start_time) / len(lines)
+def mean_train_time(lines=lines):
+    start_time = datetime.strptime(lines[0].split(' ')[0] + ' ' + lines[0].split(' ')[1], '%m-%d %H:%M:%S')
+    end_time = datetime.strptime(lines[-1].split(' ')[0] + ' ' + lines[-1].split(' ')[1], '%m-%d %H:%M:%S')
+    return (end_time - start_time) / len(lines)
 
-
-file_path = "models/log.txt"  # Replace with the path to your file
-elapsed_time = calculate_elapsed_time(file_path)
-print("(TRAIN + TEST) Total elapsed time: ", elapsed_time)
-print("(TRAIN) Mean training time: ", mean_train_time(file_path))
+print("(TRAIN) Total elapsed time: ", calculate_elapsed_time(), "(hours)")
+print("(TRAIN) Mean batch training time: ", mean_train_time().total_seconds(), "(secs)")

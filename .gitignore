@@ -8,6 +8,9 @@ rcnn_targets.npy
 .DS_Store
 diario.md
 
+# trained models
+*.tar
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
