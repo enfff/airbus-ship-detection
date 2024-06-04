@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     media_filepath = os.path.join(os.getcwd(), "media", model_name)
     os.makedirs(media_filepath, exist_ok=True)
-    plt.savefig(os.path.join(media_filepath, "results.png"))
+    fig.savefig(os.path.join(media_filepath, "results.png"))
 
     # ax2.grid(True)
     # ax2.set_title('Validation Losses')
