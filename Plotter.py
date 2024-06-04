@@ -11,15 +11,20 @@ class Plotter:
         prediction = self.__model([img])[0]
         boxes = prediction['boxes'].int()
         scores = prediction['scores'].tolist()
+
+        print(f"{scores = }")
+        print(f"{boxes = }")
+        
         num = len(boxes)
-        if num>0:
+        if num > 0:
             img = draw_bounding_boxes(
                 (img*256).byte(),
                 boxes, 
                 labels=['{:.2f}'.format(score*100) for score in scores],
                 width = 1,
-                colors = 'red',
-                font='Arial',
+                colors = 'yellow',
+                font='/usr/share/fonts/cantarell/Cantarell-VF.otf', # ad enf non trova arial
+                #font='arial',
                 font_size = 15
             )
         fig, ax = plt.subplots()
