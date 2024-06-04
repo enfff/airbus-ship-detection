@@ -1,12 +1,15 @@
 from datetime import datetime
 import re
 
+import matplotlib.pyplot as plt
+
 file_path = "models/model_noaug_id0/log.txt"  # Replace with the path to your file
 
 lines = []
 with open(file_path, 'r') as file:
     lines_buf = file.readlines()
     pattern = re.compile(r"E: \d+ B: \d+")
+    pattern = re.compile(r"Epoch: \d+, Training Loss: \d+\.\d+, Validation Loss: \d+\.\d+, lr: \d+\.\d+")
     lines = [line for line in lines_buf if pattern.search(line)]
 
 def calculate_elapsed_time(lines=lines):

@@ -7,9 +7,12 @@ prova*.py
 rcnn_targets.npy
 .DS_Store
 diario.md
+trash/
 
 # trained models
 *.tar
+*.pt
+*.pth
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
