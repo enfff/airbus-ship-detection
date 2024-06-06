@@ -25,11 +25,14 @@ last_image_id = None
 tmp_dict = {      # dict to append to new_targets
   "boxes": [],
   "labels": [],
+  "image_id": "",
 }
 
 for index, row in targets.iterrows():
     image_id = row['ImageId']
     label = row['EncodedPixels']
+
+    tmp_dict["image_id"] = image_id
 
     if skip_empty:        # Skips images with empty labels
       if pd.isna(label):
@@ -48,6 +51,7 @@ for index, row in targets.iterrows():
       tmp_dict = {
         "boxes": [],
         "labels": [],
+        "image_id": "",
       }
 
     box = None
