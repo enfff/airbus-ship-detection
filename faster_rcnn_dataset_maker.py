@@ -2,9 +2,6 @@ import numpy as np
 import pandas as pd
 import torch
 import cv2
-import os
-import matplotlib.pyplot as plt
-import shutil
 
 def rl_decode(rl_str, height, length):
   mask = np.zeros(shape=(1,height,length))
@@ -22,7 +19,7 @@ def rl_decode(rl_str, height, length):
 
 targets = pd.read_csv("train_ship_segmentations_v2.csv")
 
-skip_empty = True
+skip_empty = False
 
 new_targets = []
 
@@ -103,6 +100,9 @@ for index, row in targets.iterrows():
         # ]
 
 np.save('rcnn_targets.npy', new_targets)
+print("Saved file!")
 
+print("Loading file...")
 read_dictionary = np.load('rcnn_targets.npy',allow_pickle='TRUE')
-print(read_dictionary)
+
+print(len(read_dictionary))

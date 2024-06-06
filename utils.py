@@ -1,11 +1,19 @@
-import matplotlib.pyplot as plt
-import torch
 import os
+import numpy as np
+import torch
 import torch.nn as nn
 from torchvision.models.detection import fasterrcnn_resnet50_fpn, FasterRCNN_ResNet50_FPN_Weights
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from datetime import datetime
-import re
+import matplotlib.pyplot as plt
+from torchvision.utils import draw_bounding_boxes
+
+def generate_paths(augmentation_type: str, id: str = '0') -> tuple[str, str, str, str]:
+    model_name = 'model_'+ augmentation_type + '_id' + str(id)
+    model_root = os.path.join('models', model_name)
+    model_filepath = os.path.join(model_root,'model.tar')
+    log_filepath = os.path.join(model_root,'log.txt')
+
+    return model_name, model_root, model_filepath, log_filepath
 
 def new_model():
     """
@@ -33,6 +41,9 @@ def new_model():
 
 
 def elapsed_time(log_filepath: str):
+    import re
+    from datetime import datetime
+
     """
         Prints the elapsed time for the training model
             log_filepath: str, path to the log file
@@ -53,12 +64,14 @@ def elapsed_time(log_filepath: str):
     print(f"(TRAIN) Total elapsed time: {calculate_elapsed_time()} (hours)")
     print(f"(TRAIN) Mean batch training time: {float(calculate_elapsed_time().total_seconds()/len(lines)).__round__(4)} (secs)")
 
-
 def plot_results(model_filepath: str):
     """
         Plots the training results of the model, and saves the plot to the media folder
             model_filepath: str, path to the model file (.tar)
     """
+
+    import matplotlib.pyplot as plt
+    
     checkpoint = torch.load(model_filepath, map_location=torch.device('cpu'))
     model_name = model_filepath.split('/')[-2]
 
@@ -87,3 +100,50 @@ def plot_results(model_filepath: str):
     media_filepath = os.path.join(os.getcwd(), "media", model_name)
     os.makedirs(media_filepath, exist_ok=True)
     fig.savefig(os.path.join(media_filepath, "results.png"))
+
+class Plotter:
+    def __init__(self, model):
+        self.__model = model
+        if self.__model.training:
+            self.__model.eval()
+
+    def __call__(self, img):
+        prediction = self.__model([img])[0]
+        boxes = prediction['boxes'].int()
+        scores = prediction['scores'].tolist()
+
+        print(f"{scores = }")
+        print(f"{boxes = }")
+        
+        num = len(boxes)
+        if num > 0:
+            img = draw_bounding_boxes(
+                (img*256).byte(),
+                boxes, 
+                labels=['{:.2f}'.format(score*100) for score in scores],
+                width = 1,
+                colors = 'yellow',
+                font='/usr/share/fonts/cantarell/Cantarell-VF.otf', # ad enf non trova arial
+                #font='arial',
+                font_size = 15
+            )
+        fig, ax = plt.subplots()
+        fig.set_size_inches(16,9)
+        fig.tight_layout(pad=5)
+        ax.imshow(img.byte().permute(1, 2, 0))
+        plt.show()
+        plt.close()
+
+def print_ground_truths(indices: list = [1, 2, 3, 4, 5, 6, 7, 8, 9]):
+    """
+        Prints the ground truths computed in faster_rcnn_dataset_maker.py
+    """
+    
+    ground_truths = np.load('rcnn_targets.npy',allow_pickle='TRUE')
+    # print(f"{ground_truths.shape = }")
+    print(f"{len(ground_truths)}")
+
+    for index in indices:
+        print(f"{ground_truths[index] = }\n")
+
+    pass

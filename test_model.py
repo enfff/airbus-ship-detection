@@ -1,18 +1,18 @@
 import torch
 import os
 from torchvision.io import read_image
-from utils import *
+from utils import Plotter, generate_paths, elapsed_time, plot_results, new_model
 
-from Plotter import Plotter
+augmentation_type = 'fourier'
+id = 0
 
-model_filepath = os.path.join('models', 'model_fourier_id0','model.tar')
-log_filepath = os.path.join('models', 'model_fourier_id0','log.txt')
+model_name, model_filepath, log_filepath = generate_paths(augmentation_type, id)
+
 # media_folder = os.path.join('media', 'model_fourier_id0')
 
 if __name__ == '__main__':
 
     checkpoint = torch.load(model_filepath, map_location=torch.device('cpu'))
-
     model = new_model()
     model.load_state_dict(checkpoint['model_state_dict'])
 
