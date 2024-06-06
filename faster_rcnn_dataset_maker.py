@@ -18,11 +18,8 @@ def rl_decode(rl_str, height, length):
   return torch.Tensor(mask).reshape((768, 768)).gt(0)
 
 targets = pd.read_csv("train_ship_segmentations_v2.csv")
-
 skip_empty = False
-
 new_targets = []
-
 last_image_id = None
 
 tmp_dict = {      # dict to append to new_targets
@@ -40,6 +37,9 @@ for index, row in targets.iterrows():
 
     if last_image_id != image_id:
       last_image_id = image_id
+
+      tmp_dict["boxes"] = torch.tensor(tmp_dict["boxes"])
+      tmp_dict["labels"] = torch.tensor(tmp_dict["labels"])
 
       new_targets.append(tmp_dict)
       # print(f"New dict appended: {tmp_dict = }")
@@ -81,7 +81,7 @@ for index, row in targets.iterrows():
         assert(h <= 1 and h>= 0)
 
         tmp_dict["boxes"] += [[x1, y1, x2, y2]]
-        tmp_dict["labels"] += [[1]]                   # only one class: ship
+        tmp_dict["labels"] += [1]                   # only one class: ship
 
         # During training, the model expects both the input tensors and a targets (list of dictionary), containing:
         # boxes (FloatTensor[N, 4]): the ground-truth boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.

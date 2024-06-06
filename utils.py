@@ -134,9 +134,15 @@ class Plotter:
         plt.show()
         plt.close()
 
-def print_ground_truths(indices: list = [1, 2, 3, 4, 5, 6, 7, 8, 9]):
+def print_ground_truths(indices: list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]):
     """
         Prints the ground truths computed in faster_rcnn_dataset_maker.py
+        An entry of such object is as follows:
+            ground_truths[4] = {'boxes': tensor([[0.6094, 0.3737, 0.6393, 0.3997],
+            [0.0859, 0.4909, 0.1094, 0.5026],
+            [0.3346, 0.2266, 0.3971, 0.2409],
+            [0.0924, 0.5026, 0.1016, 0.5039],
+            [0.4297, 0.2318, 0.4805, 0.2565]]), 'labels': tensor([1., 1., 1., 1., 1.])}
     """
     
     ground_truths = np.load('rcnn_targets.npy',allow_pickle='TRUE')
@@ -145,5 +151,3 @@ def print_ground_truths(indices: list = [1, 2, 3, 4, 5, 6, 7, 8, 9]):
 
     for index in indices:
         print(f"{ground_truths[index] = }\n")
-
-    pass
