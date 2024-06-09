@@ -20,7 +20,7 @@ while True:
     pyautogui.click()
 
     selected_name, selected_array = random.choice(list(arrays.items()))
-    pyautogui.write(f"{selected_name} e' {random.choice(selected_array)}, ")
+    pyautogui.write(f"{selected_name} e' {random.choice(selected_array)}\n")
     
     time.sleep(30*60)
     pyautogui.moveTo(650, 350)

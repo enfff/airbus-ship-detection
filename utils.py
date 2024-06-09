@@ -148,6 +148,21 @@ def print_ground_truths(indices: list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]):
     ground_truths = np.load('rcnn_targets.npy',allow_pickle='TRUE')
     # print(f"{ground_truths.shape = }")
     print(f"{len(ground_truths)}")
+    print(ground_truths.keys())
 
     for index in indices:
         print(f"{ground_truths[index] = }\n")
+
+def rl_decode(rl_str, height, length):
+  mask = np.zeros(shape=(1,height,length))
+  couples = rl_str.split()
+  for i in range(0, len(couples)-1, 2):
+    # print(i)
+    el = int(couples[i])
+    qty = int(couples[i+1])
+    r,c = np.unravel_index(el,(height,length))
+    for j in range(qty):
+      mask[0, c+j-1, r-1] = 1
+
+    # print(torch.Tensor(mask))
+  return torch.Tensor(mask).reshape((768, 768)).gt(0)

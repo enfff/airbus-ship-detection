@@ -6,7 +6,7 @@ from utils import Plotter, generate_paths, elapsed_time, plot_results, new_model
 augmentation_type = 'fourier'
 id = 0
 
-model_name, model_filepath, log_filepath = generate_paths(augmentation_type, id)
+model_name, model_root, model_filepath, log_filepath = generate_paths(augmentation_type, id)
 
 # media_folder = os.path.join('media', 'model_fourier_id0')
 
@@ -27,6 +27,6 @@ if __name__ == '__main__':
     with torch.no_grad():
         for file in os.listdir('data_augmentation/imgs/src/'):
             # Read Image
-            image = read_image('data_augmentation/imgs/src/'+file).float()/256.0
+            image = read_image('data_augmentation/imgs/src/'+file).type(torch.uint8)
             # image = transform(image)
             plotter(image)
