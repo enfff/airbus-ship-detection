@@ -31,7 +31,7 @@ data = []
 skipped = 0
 iterations = 0
 
-# For each group
+# For each ImageId
 for name, group in tqdm(groups):
     # Create a dictionary
     d = {'image_id': name, 'boxes': [], 'labels': []}
@@ -41,7 +41,7 @@ for name, group in tqdm(groups):
     # if iterations >= 20:
     #   break
 
-    # For each row in the group
+    # For each bounding box in ImageId
     for index, row in group.iterrows():
 
       if isinstance(row['EncodedPixels'], float):
@@ -104,11 +104,11 @@ for name, group in tqdm(groups):
     # print("appended, ", d['image_id'])
 
     iterations += 1
-    if iterations % 10000 == 0:
+    if iterations % 5000 == 0:
         # Ogni 10k iterazioni svuota la RAM, altrimenti mi crasha il PC po
         gc.collect()
         # print("flushed")
-
+    
 print("Skipped images: ", skipped)
 np.save('rcnn_targets.npy', data)
 print("Saved file!")

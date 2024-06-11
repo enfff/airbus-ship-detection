@@ -8,7 +8,7 @@ Code for the Airbus Ship Detection on Kaggle, modified for the Machine Learning 
 - [x] Fourier Based Data Augmentation
 - [x] Gaussian Patch Data Augmentation
 - [x] Random Noise Data Augmentation
-- [ ] Geometric Transformations
+- [x] Geometric Transformations
 
 #### Previously we used git lfs
 This repository used `git lfs` for tracking large files, read more about it [here](https://git-lfs.com/)
