@@ -3,8 +3,8 @@ kaggle.json
 airbus-ship-detection.zip
 datasets/airbus-ship-detection/test_v2/
 datasets/airbus-ship-detection/train_v2/
-prova*
-rcnn_targets.npy
+*prova*
+*.npy
 .DS_Store
 diario.md
 trash/
