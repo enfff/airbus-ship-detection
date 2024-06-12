@@ -4,6 +4,7 @@ import cv2
 import torch
 from tqdm import tqdm
 import glob
+import gc
 
 # During training, the model expects both the input tensors and a targets (list of dictionary), containing:
 # boxes (FloatTensor[N, 4]): the ground-truth boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
@@ -24,8 +25,8 @@ import glob
 # ]
 
 # This script reads and convert the data from the csv file to the format above.
-# The data is saved in multiple .npy files, each containing a list of dictionaries.
-# The final step is to merge all the files into a single .npy file.
+# The data is saved in multiple .pt files, each containing a list of dictionaries.
+# The final step is to merge all the files into a single .pt file.
 # I had to do that because otherwise we would run out of RAM memory.
 
 new_targets = []
@@ -52,8 +53,8 @@ def rl_decode(rl_str, height, length):
 
 tmp_dict = {      # dict to append to new_targets
   "boxes": torch.FloatTensor([]),
-  "labels": torch.IntTensor([]),
-  "image_id": None,
+  "labels": torch.LongTensor([]),
+  "image_id": 'IMHERE', # just for debugging
 }
 
 iter = 0
@@ -74,16 +75,18 @@ for index, row in tqdm(targets.iterrows()):
       new_targets.append(tmp_dict)  # append to new_targets
 
       if int(index / mod) > 0:
-        np.save(f'rcnn_targets{iter}.npy', new_targets)
+        # Per evitare di tagliare il file
+
+        torch.save(new_targets, 'rcnn_targets' + str(iter) + '.pt')
         new_targets = []
         iter += 1
         mod += 20_000
-        print("\ncreated new .npy file. last index: ", index, "\n")
+        print("\ncreated new .pt file. last index: ", index, "\n")
 
       # reset to restart
       tmp_dict = {
         "boxes": torch.FloatTensor([]),
-        "labels": torch.IntTensor([]),
+        "labels": torch.LongTensor([]),
         "image_id": image_id
       }
 
@@ -96,41 +99,44 @@ for index, row in tqdm(targets.iterrows()):
         x, y, w, h = cv2.boundingRect(contours[0])
 
         tmp_dict["boxes"] = torch.cat([tmp_dict["boxes"], torch.FloatTensor([[x, y, x+w, y+h]])])
-        tmp_dict["labels"] = torch.cat([tmp_dict["labels"], torch.Tensor([1])])  # only one class: ship
+        tmp_dict["labels"] = torch.cat([tmp_dict["labels"], torch.LongTensor([1])])  # only one class: ship
 
-# saves the last one
-np.save(f'rcnn_targets{iter}.npy', new_targets)
-new_targets = []
-iter += 1
-print("\nsaved last .npy file")
 
+torch.save(new_targets, 'rcnn_targets' + str(iter) + '.pt') # saves the last one
+print("\nsaved last .pt file")
 
 ### Merge files
 print("Merging files...")
 # Get a list of all files that match the pattern
-files = glob.glob('rcnn_targets*.npy')
+files = glob.glob('rcnn_targets*.pt')
 files = sorted(files)
 
-# Initialize an empty list to hold all the data
-all_data = []
+all_data = [] # Initialize an empty list to hold all the data
 
 # Loop over the files and load each one
 for file in tqdm(files):
-    data = np.load(file, allow_pickle=True)
+    data = torch.load(file)
 
     if file == files[0]:
         data = data[1:]
         # Quick and dirty solution. Skips the first entry, because its
         # image_id is set to None due to bad programming :).
-
+    
     all_data.extend(data)
-
+    
 # Save the combined data to a new file
-np.save('rcnn_targets.npy', all_data.tolist())
+torch.save(all_data, 'rcnn_targets.pt')
+print("Merged files and saved to 'rcnn_targets.pt'")
 
-del all_data
-import gc
-gc.collect()
 
-# Load the combined data
-data = np.load('rcnn_targets.npy', allow_pickle=True)
+## Testing the results
+
+data = torch.load('rcnn_targets.pt')
+
+print(type(data)) # <class 'list'>
+print(type(data[3]['labels'])) # <class 'torch.Tensor'>
+print(data[3]['boxes'])
+print(data[3]['labels'])
+print(data[3]['image_id'])
+
+print(data[3].keys())

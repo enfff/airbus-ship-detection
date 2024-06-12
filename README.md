@@ -10,6 +10,16 @@ Code for the Airbus Ship Detection on Kaggle, modified for the Machine Learning 
 - [x] Random Noise Data Augmentation
 - [x] Geometric Transformations
 
+## Targets
+
+The target (ground-truths) are a list of dictionaries, containing three fields
+
+``` python
+"boxes": tensor([], dtype=torch.float64),
+"label": tensor([], dtype=torch.int64),
+"image_id": str
+```
+
 #### Previously we used git lfs
 This repository used `git lfs` for tracking large files, read more about it [here](https://git-lfs.com/)
 
