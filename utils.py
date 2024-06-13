@@ -6,9 +6,10 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn, FasterRCNN_Res
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 import matplotlib.pyplot as plt
 from torchvision.utils import draw_bounding_boxes
+import torchvision.transforms.functional as F
 
-def generate_paths(augmentation_type: str, id: str = '0') -> tuple[str, str, str, str]:
-    model_name = 'model_'+ augmentation_type + '_id' + str(id)
+def generate_paths(augmentation_type: str) -> tuple[str, str, str, str]:
+    model_name = 'model_'+ augmentation_type
     model_root = os.path.join('models', model_name)
     model_filepath = os.path.join(model_root,'model.tar')
     log_filepath = os.path.join(model_root,'log.txt')
@@ -41,6 +42,7 @@ def new_model():
 
 
 def elapsed_time(log_filepath: str):
+
     import re
     from datetime import datetime
 
@@ -53,7 +55,7 @@ def elapsed_time(log_filepath: str):
     with open(log_filepath, 'r') as file:
         lines_buf = file.readlines()
         pattern = re.compile(r"E: \d+ B: \d+")
-        pattern = re.compile(r"Epoch: \d+, Training Loss: \d+\.\d+, Validation Loss: \d+\.\d+, lr: \d+\.\d+")
+        # pattern = re.compile(r"Epoch: \d+, Training Loss: \d+\.\d+, Validation Loss: \d+\.\d+, lr: \d+\.\d+")
         lines = [line for line in lines_buf if pattern.search(line)]
 
     def calculate_elapsed_time(lines=lines):
@@ -102,23 +104,25 @@ def plot_results(model_filepath: str):
     fig.savefig(os.path.join(media_filepath, "results.png"))
 
 class Plotter:
-    def __init__(self, model):
+    def __init__(self, model, threshold=0.5):
         self.__model = model
+        self.threshold = threshold
         if self.__model.training:
             self.__model.eval()
 
     def __call__(self, img):
-        prediction = self.__model([img])[0]
+        prediction = self.__model([F.convert_image_dtype(img, dtype=torch.float)])[0]
         boxes = prediction['boxes'].int()
         scores = prediction['scores'].tolist()
-
-        print(f"{scores = }")
-        print(f"{boxes = }")
         
+        scores = torch.tensor(scores)
+        boxes = boxes[scores > self.threshold]
+        scores = scores[scores > self.threshold]
+
         num = len(boxes)
         if num > 0:
             img = draw_bounding_boxes(
-                (img*256).byte(),
+                img,
                 boxes, 
                 labels=['{:.2f}'.format(score*100) for score in scores],
                 width = 1,
