@@ -5,10 +5,9 @@ import torch
 from utils import rl_decode
 import gc
 from tqdm import tqdm
-import math
 
 # Read the CSV file
-df = pd.read_csv('train_ship_segmentations_v2.csv')
+df = pd.read_csv('datasets/airbus-ship-detection/train_ship_segmentations_v2.csv')
 
 # To filter out stuff
 # df = df[df['ImageId'] == '20ef0ae13.jpg']

@@ -7,6 +7,11 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 import matplotlib.pyplot as plt
 from torchvision.utils import draw_bounding_boxes
 import torchvision.transforms.functional as F
+import torch
+import matplotlib.pyplot as plt
+import torchvision.transforms.functional as F
+from torchvision.tv_tensors import BoundingBoxes
+from torchvision.io import read_image
 
 def generate_paths(augmentation_type: str) -> tuple[str, str, str, str]:
     model_name = 'model_'+ augmentation_type
@@ -75,7 +80,7 @@ def plot_results(model_filepath: str):
     import matplotlib.pyplot as plt
     
     checkpoint = torch.load(model_filepath, map_location=torch.device('cpu'))
-    model_name = model_filepath.split('/')[-2]
+    model_name = model_filepath.split('/')[-2].replace("model_", "")
 
     lrs = checkpoint['lrs']
     validation_losses = checkpoint['validation_losses']
@@ -83,7 +88,7 @@ def plot_results(model_filepath: str):
     epochs = range(checkpoint['epoch'] + 1)
 
     fig, [ax1, ax2] = plt.subplots(2, 1, sharex=True, figsize=(10, 6))
-    fig.suptitle('Training Results')
+    fig.suptitle(f'Training Results for data augmentation type: {model_name}')
     ax1.grid(True)
     ax1.set_yscale('log')
     ax1.set_ylabel('Learning Rates (logarithmic scale)')
@@ -170,3 +175,52 @@ def rl_decode(rl_str, height, length):
 
     # print(torch.Tensor(mask))
   return torch.Tensor(mask).reshape((768, 768)).gt(0)
+
+
+
+class ShipsDataset(torch.utils.data.Dataset):
+    def __init__(self, file_list, targets, transforms = None, target_transforms = None):
+        self.file_list = sorted(file_list, key = lambda f: f.split('/')[-1])
+        self.targets = sorted(targets, key=lambda d: d['image_id'])
+        self.transform = transforms
+
+    def __len__(self):
+        self.filelength = len(self.file_list)
+        return self.filelength
+
+    def __getitem__(self, idx):
+        
+        label = self.targets[idx]
+        
+        assert self.file_list[idx].split('/')[-1] == label['image_id'], f"Bounding Box mismatch for {idx = }, file: {self.file_list[idx].split('/')[-1]} and label: {label['image_id']}"
+        
+        try:
+            image = read_image(self.file_list[idx])    # numpy tensor
+        except RuntimeError as e:
+            Warning(f'Errore con {self.file_list[idx]}')
+#             self.targets[idx]['labels'] = torch.tensor([])
+            return None, self.targets[idx]
+        
+        image = F.convert_image_dtype(image) # To compensate for TypeError: Expected input images to be of floating type (in range [0, 1]), but found type torch.uint8 instead
+        
+      #  print(self.file_list[idx])
+      #  print(self.targets[idx])
+        
+        try:
+            label['boxes'] = BoundingBoxes(data=label['boxes'], format='XYXY', canvas_size=tuple(image.size()[-2:]))
+        except IndexError as e:
+            Warning(f'Errore con {idx = }')
+            plt.imshow(image.permute(1, 2, 0))
+            plt.show()
+
+        if self.transform:
+            if label['boxes'].numel():
+                image, label = self.transform(image, label)
+                # print("type of label:", type(label))
+            else:
+                image = self.transform(image)
+            
+        return image, label
+
+def custom_collate_fn(batch):
+    return batch
