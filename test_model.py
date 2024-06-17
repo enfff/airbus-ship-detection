@@ -18,11 +18,11 @@ model_name, model_root, model_filepath, log_filepath = generate_paths(augmentati
 image_mean_test = torch.tensor([0.2114, 0.2936, 0.3265])
 image_std_test = torch.tensor([0.0816, 0.0745, 0.0731])
 
+# La mean, std del test set sono all'interno del file di LOG. Trova modo per estrapolare i dati
+
 def test(model, test_loader, device=torch.device("cpu")):
     # Normally targets should be None
     
-    model.transform.image_mean  = image_mean_test
-    model.transform.image_std = image_std_test
     model._skip_resize = True
     model.eval()
 

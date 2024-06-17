@@ -1,122 +1,94 @@
-import numpy as np
 import pandas as pd
 import cv2
 import torch
 from utils import rl_decode
-import gc
 from tqdm import tqdm
+import glob
 
 # Read the CSV file
 df = pd.read_csv('datasets/airbus-ship-detection/train_ship_segmentations_v2.csv')
+# print(df.head(20))
 
-# To filter out stuff
-# df = df[df['ImageId'] == '20ef0ae13.jpg']
+grouped_df = df.groupby('ImageId')['EncodedPixels'].apply(lambda x: list(x.fillna(''))).reset_index()
 
-groups = df.groupby('ImageId')
+# Limit the DataFrame to the first 10 rows
+# first_10_rows = grouped_df.head(30)
 
-# use_me = groups.get_group('20ef0ae13.jpg')
-# print(use_me)
-# print(use_me["EncodedPixels"], type(use_me["EncodedPixels"]))
-# print(use_me["ImageId"], type(use_me["ImageId"]))
+# Iterate over the rows
 
-# if use_me['EncodedPixels'].empty:
-#   print("Empty")
-# else:
-#   print("Not empty")
+filenumber = 0
+new_targets = []
+mod = 20_000
 
-# List to store the dictionaries
-data = []
+for index, row in tqdm(grouped_df.iterrows()):
 
-skipped = 0
-iterations = 0
+  if index % mod == 0 and index > 0: # Save the file every 20k indices
+      torch.save(new_targets, 'rcnn_targets' + str(filenumber) + '.pt')
+      print("\ncreated new .pt file. last index: ", index, "\n")
+      new_targets = []
+      filenumber += 1
 
-# For each ImageId
-for name, group in tqdm(groups):
-    # Create a dictionary
-    d = {'image_id': name, 'boxes': [], 'labels': []}
+  image_id = row['ImageId']
+  encoded_pixels = row['EncodedPixels']
 
-    # print(group, "\n\n\n")
+  tmp_dict = {
+      "boxes": torch.FloatTensor([]),
+      "labels": torch.LongTensor([]),
+      "image_id": image_id
+    }
 
-    # if iterations >= 20:
-    #   break
-
-    # For each bounding box in ImageId
-    for index, row in group.iterrows():
-
-      if isinstance(row['EncodedPixels'], float):
-        # Non fa l'iter per trasformare EncodedPixels in bounding boxes (perché non ce ne sono!)
-        # Quando stampavo row['EncodedPixels'] mi diceva sempre che era un float quando era vuoto. str altrimenti
-        continue
-    
-      # print(type(row))
-      # print(row)
-
-      # print(type(row["EncodedPixels"]))
-      # print(str(row["EncodedPixels"]))
-
-      # if math.isnan(row['EncodedPixels']):
-      #   print("it doesnt exists!")
-      # else:
-      #   print("it exist!")
-
-      # print(type(row["EncodedPixels"]))
-      # print(type(row["ImageId"]))
-
-      # print(row["ImageId"], type(row["EncodedPixels"]))
-
-
-
-      # if isinstance(row['EncodedPixels'], float):
-      #   # It means the row is EMPTY. (Blame Pandas, not me!)
-      #   if math.isnan(row['EncodedPixels']):
-      #     # print("empty appended, ", d['image_id'])
-      #     continue
-
-      # print(row['EncodedPixels'], type(row['EncodedPixels']))
-      
-      ## From now on we assume it's a string
-
-      # Decode the EncodedPixels to get the mask
-      mask = rl_decode(row['EncodedPixels'], 768, 768)
+  if encoded_pixels == ['']:
+      new_targets.append(tmp_dict)
+      continue
+  else:
+    for label in encoded_pixels:
+      mask = rl_decode(label, 768, 768)
       mask = (255*mask).byte().numpy()
       mask = cv2.resize(mask, (768, 768))
 
-      # Find the contours in the mask and get the bounding box
-      contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+      contours, hierarchy = cv2.findContours(mask,  cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
       x, y, w, h = cv2.boundingRect(contours[0])
 
-      # Normalize the bounding box coordinates
-      x1, y1 = x / 768, y / 768
-      x2, y2 = (x + w) / 768, (y + h) / 768
-
-      # Add the bounding box to the dictionary
-      d['boxes'].append([x1, y1, x2, y2])
-      d['labels'].append(1)  
-
-    # Add the dictionary to the list
-    data.append({
-        'image_id': d['image_id'],
-        'boxes': torch.tensor(d['boxes']),
-        'labels': torch.tensor(d['labels'])
-        })
-    # print("final appended, ", d['image_id'])
-    # print("appended, ", d['image_id'])
-
-    iterations += 1
-    if iterations % 5000 == 0:
-        # Ogni 10k iterazioni svuota la RAM, altrimenti mi crasha il PC po
-        gc.collect()
-        # print("flushed")
+      tmp_dict["boxes"] = torch.cat([tmp_dict["boxes"], torch.FloatTensor([[x, y, x+w, y+h]])])
+      tmp_dict["labels"] = torch.cat([tmp_dict["labels"], torch.LongTensor([1])])  # only one class: ship
     
-print("Skipped images: ", skipped)
-np.save('rcnn_targets.npy', data)
-print("Saved file!")
+    new_targets.append(tmp_dict)
+      
+
+# Last filesave
+torch.save(new_targets, 'rcnn_targets' + str(filenumber) + '.pt')
+print("\ncreated last .pt file")
+new_targets = []
 
 
-print("Loading file...")
-read_dictionary = np.load('rcnn_targets.npy',allow_pickle='TRUE')
-print(len(read_dictionary))
 
-# for el in read_dictionary:
-#   print(el)
-#   print("----")
+### Merge files
+print("Merging files...")
+# Get a list of all files that match the pattern
+files = glob.glob('rcnn_targets*.pt')
+files = sorted(files)
+
+all_data = [] # Initialize an empty list to hold all the data
+
+# Loop over the files and load each one
+for file in tqdm(files):
+    data = torch.load(file)
+    all_data.extend(data)
+    
+# Save the combined data to a new file
+torch.save(all_data, 'rcnn_targets.pt')
+print("Merged files and saved to 'rcnn_targets.pt'")
+
+
+
+### Testing the results
+
+data = torch.load('rcnn_targets.pt')
+
+print(type(data)) # <class 'list'>
+print(type(data[3]['labels'])) # <class 'torch.Tensor'>
+print(data[3]['boxes'])
+print(data[3]['labels'])
+print(data[3]['image_id'])
+
+print(data[3].keys())

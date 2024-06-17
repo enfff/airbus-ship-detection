@@ -35,7 +35,6 @@ last_image_id = None
 
 targets = pd.read_csv("train_ship_segmentations_v2.csv")
 
-
 def rl_decode(rl_str, height, length):
   mask = np.zeros(shape=(1,height,length))
   couples = rl_str.split()
@@ -54,7 +53,7 @@ def rl_decode(rl_str, height, length):
 tmp_dict = {      # dict to append to new_targets
   "boxes": torch.FloatTensor([]),
   "labels": torch.LongTensor([]),
-  "image_id": 'IMHERE', # just for debugging
+  "image_id": None, # just for debugging
 }
 
 iter = 0
