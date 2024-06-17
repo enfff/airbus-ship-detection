@@ -10,6 +10,7 @@ df = pd.read_csv('datasets/airbus-ship-detection/train_ship_segmentations_v2.csv
 # print(df.head(20))
 
 grouped_df = df.groupby('ImageId')['EncodedPixels'].apply(lambda x: list(x.fillna(''))).reset_index()
+# print(grouped_df.__len__) # 192_556
 
 # Limit the DataFrame to the first 10 rows
 # first_10_rows = grouped_df.head(30)
@@ -21,13 +22,6 @@ new_targets = []
 mod = 20_000
 
 for index, row in tqdm(grouped_df.iterrows()):
-
-  if index % mod == 0 and index > 0: # Save the file every 20k indices
-      torch.save(new_targets, 'rcnn_targets' + str(filenumber) + '.pt')
-      print("\ncreated new .pt file. last index: ", index, "\n")
-      new_targets = []
-      filenumber += 1
-
   image_id = row['ImageId']
   encoded_pixels = row['EncodedPixels']
 
@@ -38,8 +32,8 @@ for index, row in tqdm(grouped_df.iterrows()):
     }
 
   if encoded_pixels == ['']:
-      new_targets.append(tmp_dict)
-      continue
+    new_targets.append(tmp_dict)
+    continue
   else:
     for label in encoded_pixels:
       mask = rl_decode(label, 768, 768)
@@ -51,15 +45,19 @@ for index, row in tqdm(grouped_df.iterrows()):
 
       tmp_dict["boxes"] = torch.cat([tmp_dict["boxes"], torch.FloatTensor([[x, y, x+w, y+h]])])
       tmp_dict["labels"] = torch.cat([tmp_dict["labels"], torch.LongTensor([1])])  # only one class: ship
-    
-    new_targets.append(tmp_dict)
       
+    new_targets.append(tmp_dict)
+  
+  if index % mod == 0 and index > 0: # Save the file every 20k indices
+      torch.save(new_targets, 'rcnn_targets' + str(filenumber) + '.pt')
+      print("\ncreated new .pt file. last index: ", index, "\n")
+      new_targets = []
+      filenumber += 1
 
 # Last filesave
 torch.save(new_targets, 'rcnn_targets' + str(filenumber) + '.pt')
 print("\ncreated last .pt file")
 new_targets = []
-
 
 
 ### Merge files
@@ -74,21 +72,21 @@ all_data = [] # Initialize an empty list to hold all the data
 for file in tqdm(files):
     data = torch.load(file)
     all_data.extend(data)
+
+print(f"{len(all_data) = }")
     
 # Save the combined data to a new file
 torch.save(all_data, 'rcnn_targets.pt')
 print("Merged files and saved to 'rcnn_targets.pt'")
 
-
-
 ### Testing the results
 
-data = torch.load('rcnn_targets.pt')
+targets = torch.load('rcnn_targets.pt')
+targets = sorted(targets, key=lambda d: d['image_id'])
 
-print(type(data)) # <class 'list'>
-print(type(data[3]['labels'])) # <class 'torch.Tensor'>
-print(data[3]['boxes'])
-print(data[3]['labels'])
-print(data[3]['image_id'])
+print(f"{len(targets) = }")
+assert len(targets) == 192_556, "Dimensione sbagliata"
 
-print(data[3].keys())
+
+print(targets[0])
+print(targets[-1])
