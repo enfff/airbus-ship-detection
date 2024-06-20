@@ -5,9 +5,10 @@ from utils import Plotter, generate_paths, elapsed_time, plot_results
 # from utils import ShipsDataset, custom_collate_fn, new_model
 from data_augmentation import *
 
-augmentation_type = 'fourier_basis_augmentation'
+augmentation_type = 'gaussian_patch'
 # nothing
 # fourier_basis_augmentation
+# gaussian_patch
 
 model_name, model_root, model_filepath, log_filepath = generate_paths(augmentation_type)
 
