@@ -87,20 +87,32 @@ def plot_results(model_filepath: str):
     training_losses = checkpoint['training_losses']
     epochs = range(checkpoint['epoch'] + 1)
 
-    fig, [ax1, ax2] = plt.subplots(2, 1, sharex=True, figsize=(10, 6))
+    print(lrs)
+
+    fig, ax2 = plt.subplots(1, 1, sharex=True, figsize=(6, 6))
     fig.suptitle(f'Training Results for data augmentation type: {model_name}')
-    ax1.grid(True)
-    ax1.set_yscale('log')
-    ax1.set_ylabel('Learning Rates (logarithmic scale)')
-    ax1.set_xlabel('Epoch')
-    ax1.plot(epochs, lrs)
-    ax1.legend(['Learning Rates'])
 
     ax2.grid(True)
     ax2.set_ylabel('Losses')
     ax2.set_xlabel('Epoch')
-    ax2.plot(epochs, training_losses, validation_losses)
+    ax2.set_xlim(0,18)
+    ax2.plot(epochs[:19], training_losses[:19], validation_losses[:19], linewidth = '3')
     ax2.legend(['Training Losses', 'Validation Losses'])
+
+    # fig, [ax1, ax2] = plt.subplots(2, 1, sharex=True, figsize=(10, 6))
+    # fig.suptitle(f'Training Results for data augmentation type: {model_name}')
+    # ax1.grid(True)
+    # ax1.set_yscale('log')
+    # ax1.set_ylabel('Learning Rates (logarithmic scale)')
+    # ax1.set_xlabel('Epoch')
+    # ax1.plot(epochs, lrs)
+    # ax1.legend(['Learning Rates'])
+
+    # ax2.grid(True)
+    # ax2.set_ylabel('Losses')
+    # ax2.set_xlabel('Epoch')
+    # ax2.plot(epochs, training_losses, validation_losses)
+    # ax2.legend(['Training Losses', 'Validation Losses'])
 
     plt.show()
 

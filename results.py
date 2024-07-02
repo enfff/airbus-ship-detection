@@ -7,6 +7,7 @@ from data_augmentation import *
 
 augmentation_type = 'gaussian_patch'
 # nothing
+# geometric
 # fourier_basis_augmentation
 # gaussian_patch
 
