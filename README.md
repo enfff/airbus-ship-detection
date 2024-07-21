@@ -1,30 +1,20 @@
 # airbus-ship-detection
-Code for the Airbus Ship Detection on Kaggle, modified for the Machine Learning for Vision and Multimedia class at Politecnico di Torino, with a focus on Data Augmentation Techniques
+Code for the Airbus Ship Detection on Kaggle, modified for the Machine Learning for Vision and Multimedia class at Politecnico di Torino, with a focus on Data Augmentation Techniques. A brief presentation of our work can be found [here](presentation.pdf).
+We wanted to train a model to be more resistant to unforeseen noise, utilizing lesser known data augmentation techniques, and then test it on on disturbances that might happen in a real world environment. More details on the [paper](/paper.pdf).
 
-- Used [schedulerplotter](https://github.com/enfff/schedulerplotter)
+![pic](media/main_results.png)
 
-## TODO
-- [ ] Bayesian Data Augmentation
-- [x] Fourier Based Data Augmentation
-- [x] Gaussian Patch Data Augmentation
-- [x] Random Noise Data Augmentation
-- [x] Geometric Transformations
+## Folders
 
-## Targets
+- `models`: contains a `model.tar` for each model, describing the model weights, the learning rates for each iteration, the losses, and much more. Those informations are later used to test the model, and produce the plots
+- `media` contains a `result.png` image for each model comparing the training losses with the validation losses
 
-The target (ground-truths) are a list of dictionaries, containing three fields
+## Training targets
+
+The target (ground-truths) are a list of dictionaries, containing these three fields
 
 ``` python
 "boxes": tensor([], dtype=torch.float64),
 "label": tensor([], dtype=torch.int64),
 "image_id": str
-```
-
-#### Previously we used git lfs
-This repository used `git lfs` for tracking large files, read more about it [here](https://git-lfs.com/)
-
-Instructions for Arch Linux
-``` bash
-paru -Syu git-lfs
-git lfs install
 ```
